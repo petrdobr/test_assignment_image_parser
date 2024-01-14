@@ -1,2 +1,41 @@
-@extends base
-<h1>Your lucky number is {{ number }}</h1>
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Загрузчик изображений</h1>
+
+{{ form_start(form, {'attr': {'class': 'row g-3'}}) }}
+    <div class="col-md-8">
+        {{ form_widget(form.url, {'attr': {'class': 'form-control', 'placeholder': 'Введите URL'}}) }}
+    </div>
+    <div class="col-md-2">
+        {{ form_widget(form.submit) }}
+    </div>
+    <div class="col-md-2">
+        {{ form_widget(form.reset) }}
+    </div>
+{{ form_end(form) }}
+
+    {% if images is not empty %}
+        <h2 class="mt-4 mb-3">Загруженные изображения</h2>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <tr>
+                    {% for image in images %}
+                        <td>
+                            <div class="card">
+                    <a href="{{ image }}">
+                        <img src="{{ image }}" alt="Image" width="300">
+                    </a>
+                </div>
+                        </td>
+                        {% if loop.index % 4 == 0 %}
+                            </tr><tr>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            </table>
+        </div>
+        <p class="mt-3">На странице обнаружено {{ imageCount }} изображений на {{ totalWeight }} Мб.</p>
+    {% endif %}
+{% endblock %}
