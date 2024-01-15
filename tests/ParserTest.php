@@ -77,6 +77,10 @@ class ParserTest extends WebTestCase
 
         $expectedTotalWeight = 0.006;
         $this->assertEquals($expectedTotalWeight, $totalWeight);
+
+        // Additionally test function that clears cache with images
         $imageDownloader->clearImgPath($testCachePath);
+        $filesInCache = glob($testCachePath . '*');
+        $this->assertEmpty($filesInCache);
     }
 }
