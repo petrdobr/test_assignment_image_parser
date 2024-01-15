@@ -9,6 +9,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\HttpKernel\HttpCache\Store;
+use Symfony\Component\HttpClient\CachingHttpClient;
 
 class ParserController extends AbstractController
 {
@@ -44,8 +46,8 @@ class ParserController extends AbstractController
 
             // Count the number of fetched images
             $imageCount = count($images);
-
-            $totalWeight = $this->calculateTotalWeight($images, $httpClient);
+            $pathToCacheImg = '../var/img/';
+            $totalWeight = $this->calculateTotalWeight($images, $httpClient, $pathToCacheImg);
 
             return $this->render('homepage.html.twig', [
                 'form' => $form->createView(),
@@ -68,6 +70,12 @@ class ParserController extends AbstractController
     #[Route('/reset', name: 'reset')]
     public function reset()
     {
+        $files = glob('../var/img/*');
+        foreach($files as $file){ 
+            if(is_file($file)) {
+                unlink($file); 
+            }
+        }
         return $this->redirectToRoute('homepage');
     }
 
@@ -108,20 +116,19 @@ class ParserController extends AbstractController
         return $hostname . $relativePath;
     }
 
-    public function calculateTotalWeight($images, $httpClient)
+    public function calculateTotalWeight($images, $httpClient, $path)
     {
         $totalWeight = 0;
+        if (!file_exists($path)) {
+            mkdir($path);
+        }
 
         foreach ($images as $image) {
             // Fetch the image content and calculate its size
-            /* Variant with mb_strlen();
-            $imageContent = $httpClient->request('GET', $image)->getContent();
-            $imageSize = mb_strlen($imageContent, '8bit');
-            $totalWeight += $imageSize;
-            */
-
-            $headers = $httpClient->request('GET', $image)->getHeaders();
-            $imageSize = $headers['content-length'][0];
+            $response = $httpClient->request('GET', $image);
+            $fileName = pathinfo($image, PATHINFO_BASENAME);
+            $filePath = $path . $fileName;
+            $imageSize = file_put_contents($filePath, $response->getContent());
             $totalWeight += $imageSize;
         }
 
