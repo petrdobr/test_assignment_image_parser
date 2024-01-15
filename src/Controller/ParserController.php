@@ -9,7 +9,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Form\Extension\Core\Type\ResetType;
 
 class ParserController extends AbstractController
 {
@@ -17,14 +16,24 @@ class ParserController extends AbstractController
     public function index(Request $request, HttpClientInterface $httpClient): Response
     {
         $form = $this->createFormBuilder()
-        ->add('url', TextType::class, ['label' => 'Enter URL'])
-        ->add('submit', SubmitType::class, ['label' => 'Го', 'attr' => ['class' => 'btn btn-primary w-100']])
-        ->add('reset', ResetType::class, ['label' => 'Сброс', 'attr' => ['class' => 'btn btn-secondary w-100']])
+        ->add('url', TextType::class)
+        ->add('submit', SubmitType::class, ['label' => 'Го'])
         ->getForm();
 
+        $resetForm = $this->createFormBuilder()
+        ->add('reset', SubmitType::class, ['label' => 'Сброс'])
+        ->setAction($this->generateUrl('reset'))
+        ->setMethod('GET')->getForm();
+
         $form->handleRequest($request);
+        $resetForm->handleRequest($request);
+
+        if ($resetForm->isSubmitted()) {
+            return $this->redirectToRoute('reset');
+        }
 
         if ($form->isSubmitted() && $form->isValid()) {
+
             $data = $form->getData();
             $url = $data['url'];
 
@@ -43,15 +52,7 @@ class ParserController extends AbstractController
                 'images' => $images,
                 'imageCount' => $imageCount,
                 'totalWeight' => $totalWeight,
-            ]);
-        } 
-
-        if ($form->get('reset')->isClicked()) {
-            return $this->render('homepage.html.twig', [
-                'form' => $form->createView(),
-                'images' => [],
-                'imageCount' => 0,
-                'totalWeight' => 0,
+                'resetForm' => $resetForm->createView(),
             ]);
         }
 
@@ -60,7 +61,14 @@ class ParserController extends AbstractController
             'images' => [],
             'imageCount' => 0,
             'totalWeight' => 0,
+            'resetForm' => $resetForm->createView(),
         ]);
+    }
+
+    #[Route('/reset', name: 'reset')]
+    public function reset()
+    {
+        return $this->redirectToRoute('homepage');
     }
 
     /**
@@ -69,9 +77,7 @@ class ParserController extends AbstractController
     private function extractImages($content, $url)
     {
         $dom = new \DOMDocument;
-        libxml_use_internal_errors(true);
         $dom->loadHTML($content);
-        libxml_clear_errors();
 
         $images = [];
         $imgTags = $dom->getElementsByTagName('img');
@@ -81,7 +87,7 @@ class ParserController extends AbstractController
 
         foreach ($imgTags as $imgTag) {
             $src = $imgTag->getAttribute('src');
-            // You may want to manipulate the $src to get absolute URLs if needed
+
             $absolutePath = $this->makeAbsolutePath($src, $hostname);
             $images[] = $absolutePath;
         }
