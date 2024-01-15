@@ -74,10 +74,12 @@ class ParserController extends AbstractController
     /**
      * Extract images from HTML content
      */
-    private function extractImages($content, $url)
+    public function extractImages($content, $url)
     {
         $dom = new \DOMDocument;
+        libxml_use_internal_errors(true);
         $dom->loadHTML($content);
+        libxml_clear_errors();
 
         $images = [];
         $imgTags = $dom->getElementsByTagName('img');
@@ -95,7 +97,7 @@ class ParserController extends AbstractController
         return $images;
     }
 
-    private function makeAbsolutePath($relativePath, $hostname)
+    public function makeAbsolutePath($relativePath, $hostname)
     {
         // Check if the relative path is already an absolute URL
         if (filter_var($relativePath, FILTER_VALIDATE_URL)) {
@@ -106,14 +108,20 @@ class ParserController extends AbstractController
         return $hostname . $relativePath;
     }
 
-    private function calculateTotalWeight($images, $httpClient)
+    public function calculateTotalWeight($images, $httpClient)
     {
         $totalWeight = 0;
 
         foreach ($images as $image) {
             // Fetch the image content and calculate its size
+            /* Variant with mb_strlen();
             $imageContent = $httpClient->request('GET', $image)->getContent();
             $imageSize = mb_strlen($imageContent, '8bit');
+            $totalWeight += $imageSize;
+            */
+
+            $headers = $httpClient->request('GET', $image)->getHeaders();
+            $imageSize = $headers['content-length'][0];
             $totalWeight += $imageSize;
         }
 
