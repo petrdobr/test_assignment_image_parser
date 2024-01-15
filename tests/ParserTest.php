@@ -65,17 +65,18 @@ class ParserTest extends WebTestCase
     {
         // Test extracting weight
         $httpClient = $this->createMock(HttpClientInterface::class);
-        $expectedContent = ['content-length' => [1024 * 1024]];
+        $expectedContent = file_get_contents(__DIR__ . '/fixtures/test.svg');
         $response = $this->createMock(ResponseInterface::class);
         $httpClient->method('request')->willReturn($response);
-        $response->method('getHeaders')->willReturn($expectedContent);
+        $response->method('getContent')->willReturn($expectedContent);
+        $testCachePath = __DIR__ . '/cache/';
 
-
-        $images = ['https://example.com/iamge.jpg'];
+        $images = ['https://example.com/image.jpg'];
         $imageDownloader = new ParserController();
-        $totalWeight = $imageDownloader->calculateTotalWeight($images, $httpClient);
+        $totalWeight = $imageDownloader->calculateTotalWeight($images, $httpClient, $testCachePath);
 
-        $expectedTotalWeight = 1.000;
+        $expectedTotalWeight = 0.006;
         $this->assertEquals($expectedTotalWeight, $totalWeight);
+        $imageDownloader->clearImgPath($testCachePath);
     }
 }

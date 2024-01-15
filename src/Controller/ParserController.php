@@ -9,8 +9,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\HttpKernel\HttpCache\Store;
-use Symfony\Component\HttpClient\CachingHttpClient;
 
 class ParserController extends AbstractController
 {
@@ -70,12 +68,7 @@ class ParserController extends AbstractController
     #[Route('/reset', name: 'reset')]
     public function reset()
     {
-        $files = glob('../var/img/*');
-        foreach($files as $file){ 
-            if(is_file($file)) {
-                unlink($file); 
-            }
-        }
+        $this->clearImgPath('../var/img/');
         return $this->redirectToRoute('homepage');
     }
 
@@ -133,5 +126,15 @@ class ParserController extends AbstractController
         }
 
         return number_format($totalWeight / 1024 / 1024, 3);
+    }
+
+    public function clearImgPath($path)
+    {
+        $files = glob($path . '*');
+        foreach($files as $file){ 
+            if(is_file($file)) {
+                unlink($file); 
+            }
+        }
     }
 }
