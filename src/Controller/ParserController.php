@@ -9,17 +9,20 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class ParserController extends AbstractController
 {
     #[Route('/', name: 'homepage')]
     public function index(Request $request, HttpClientInterface $httpClient): Response
     {
+        // Form for URL submition
         $form = $this->createFormBuilder()
         ->add('url', TextType::class)
         ->add('submit', SubmitType::class, ['label' => 'Го'])
         ->getForm();
 
+        // Reset form
         $resetForm = $this->createFormBuilder()
         ->add('reset', SubmitType::class, ['label' => 'Сброс'])
         ->setAction($this->generateUrl('reset'))
@@ -28,10 +31,12 @@ class ParserController extends AbstractController
         $form->handleRequest($request);
         $resetForm->handleRequest($request);
 
+        // Activate reset action
         if ($resetForm->isSubmitted()) {
             return $this->redirectToRoute('reset');
         }
 
+        // URL submition
         if ($form->isSubmitted() && $form->isValid()) {
 
             $data = $form->getData();
@@ -56,6 +61,7 @@ class ParserController extends AbstractController
             ]);
         }
 
+        // Clean page
         return $this->render('homepage.html.twig', [
             'form' => $form->createView(),
             'images' => [],
@@ -65,8 +71,12 @@ class ParserController extends AbstractController
         ]);
     }
 
+    /**
+     * Reset route and action
+     * Redirects to homepage, cleans images from cache
+     */
     #[Route('/reset', name: 'reset')]
-    public function reset()
+    public function reset(): RedirectResponse
     {
         $this->clearImgPath('../var/img/');
         return $this->redirectToRoute('homepage');
@@ -75,8 +85,9 @@ class ParserController extends AbstractController
     /**
      * Extract images from HTML content
      */
-    public function extractImages($content, $url)
+    public function extractImages(mixed $content, string $url): array
     {
+        // Using DOM library
         $dom = new \DOMDocument;
         libxml_use_internal_errors(true);
         $dom->loadHTML($content);
@@ -85,9 +96,11 @@ class ParserController extends AbstractController
         $images = [];
         $imgTags = $dom->getElementsByTagName('img');
 
+        // Entered URLs should start with http:// or https://
         $parsedUrl = parse_url($url);
         $hostname = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
 
+        // Create an array with absolute urls to images
         foreach ($imgTags as $imgTag) {
             $src = $imgTag->getAttribute('src');
 
@@ -98,7 +111,10 @@ class ParserController extends AbstractController
         return $images;
     }
 
-    public function makeAbsolutePath($relativePath, $hostname)
+    /**
+     * Create an absolute url to the image using relative path and hostname
+     */
+    public function makeAbsolutePath(string $relativePath, string $hostname): string
     {
         // Check if the relative path is already an absolute URL
         if (filter_var($relativePath, FILTER_VALIDATE_URL)) {
@@ -109,8 +125,12 @@ class ParserController extends AbstractController
         return $hostname . $relativePath;
     }
 
-    public function calculateTotalWeight($images, $httpClient, $path)
+    /**
+     * Calculate the weight (size) of all images extracted from the webpage
+     */
+    public function calculateTotalWeight(array $images, HttpClientInterface $httpClient, string $path): string
     {
+        // If path does not exist create it
         $totalWeight = 0;
         if (!file_exists($path)) {
             mkdir($path);
@@ -128,7 +148,10 @@ class ParserController extends AbstractController
         return number_format($totalWeight / 1024 / 1024, 3);
     }
 
-    public function clearImgPath($path)
+    /**
+     * Clear all files from the passed in path (clear cache)
+     */
+    public function clearImgPath(string $path): void
     {
         $files = glob($path . '*');
         foreach($files as $file){ 

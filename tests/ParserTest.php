@@ -33,7 +33,7 @@ class ParserTest extends WebTestCase
         $this->assertResponseRedirects('/');
     }
 
-    public function testExtractImages()
+    public function testExtractImages(): void
     {
         // Test extracting images from webpage
         $httpClient = $this->createMock(HttpClientInterface::class);
@@ -48,7 +48,7 @@ class ParserTest extends WebTestCase
         $this->assertEquals($expectedImages, $images);
     }
 
-    public function testAbsolutePath()
+    public function testAbsolutePath(): void
     {
         // Test correct image path creation
         $relativePath = '/images/image.jpg';
@@ -61,7 +61,7 @@ class ParserTest extends WebTestCase
         $this->assertEquals($expectedPath, $absolutePath);
     }
 
-    public function testCalculateWeight()
+    public function testCalculateWeight(): void
     {
         // Test extracting weight
         $httpClient = $this->createMock(HttpClientInterface::class);
